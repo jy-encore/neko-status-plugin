@@ -6,6 +6,10 @@ import { Restart } from '../../other/restart.js'
 const require = createRequire(import.meta.url)
 const { exec, execSync } = require('child_process')
 
+const PLUGIN_DIR = './plugins/neko-status-plugin'
+const REPO = 'https://github.com/jy-encore/neko-status-plugin.git'
+const BRANCH = 'main'
+
 // 是否在更新中
 let uping = false
 
@@ -65,16 +69,27 @@ export class Update extends plugin {
    * @returns
    */
   async runUpdate (isForce) {
-    let command = 'git -C ./plugins/neko-status-plugin/ pull --no-rebase'
-    if (isForce) {
-      command = `git -C ./plugins/neko-status-plugin/ checkout . && ${command}`
-      this.e.reply('正在执行强制更新操作，请稍等')
-    } else {
-      this.e.reply('正在执行更新操作，请稍等')
-    }
+    const ready = await this.ensureForkRemote()
+    if (!ready) return false
+
     /** 获取上次提交的commitId，用于获取日志时判断新增的更新日志 */
     this.oldCommitId = await this.getcommitId('neko-status-plugin')
     uping = true
+    const fetched = await this.execSync(`git -C ${PLUGIN_DIR} fetch origin ${BRANCH}`)
+    if (fetched.error) {
+      uping = false
+      logger.mark(`${this.e.logFnc} 更新失败：neko-status-plugin`)
+      this.gitErr(fetched.error, fetched.stdout)
+      return false
+    }
+
+    let command = `git -C ${PLUGIN_DIR} pull origin ${BRANCH} --no-rebase`
+    if (isForce || !this.oldCommitId) {
+      command = `git -C ${PLUGIN_DIR} reset --hard origin/${BRANCH}`
+      this.e.reply(isForce ? '正在执行强制更新操作，请稍等' : '正在从 fork 仓库初始化并更新，请稍等')
+    } else {
+      this.e.reply('正在从 fork 仓库更新，请稍等')
+    }
     const ret = await this.execSync(command)
     uping = false
 
@@ -86,8 +101,10 @@ export class Update extends plugin {
 
     /** 获取插件提交的最新时间 */
     const time = await this.getTime('neko-status-plugin')
+    const newCommitId = await this.getcommitId('neko-status-plugin')
+    const unchanged = this.oldCommitId && newCommitId === this.oldCommitId
 
-    if (/(Already up[ -]to[ -]date|已经是最新的)/.test(ret.stdout)) {
+    if (unchanged || /(Already up[ -]to[ -]date|已经是最新的)/.test(ret.stdout)) {
       await this.reply(`neko-status-plugin已经是最新版本\n最后更新时间：${time}`)
     } else {
       await this.reply(`neko-status-plugin\n最后更新时间：${time}`)
@@ -136,7 +153,7 @@ export class Update extends plugin {
 
     let end = ''
     end =
-      '更多详细信息，请前往github查看\nhttps://github.com/erzaozi/neko-status-plugin/commits/main'
+      '更多详细信息，请前往github查看\nhttps://github.com/jy-encore/neko-status-plugin/commits/main'
 
     log = await this.makeForwardMsg(`neko-status-plugin更新日志，共${line}条`, log, end)
 
@@ -151,10 +168,39 @@ export class Update extends plugin {
   async getcommitId (plugin = '') {
     const cm = `git -C ./plugins/${plugin}/ rev-parse --short HEAD`
 
-    let commitId = await execSync(cm, { encoding: 'utf-8' })
-    commitId = lodash.trim(commitId)
+    try {
+      let commitId = await execSync(cm, { encoding: 'utf-8' })
+      commitId = lodash.trim(commitId)
+      return commitId
+    } catch {
+      return ''
+    }
+  }
 
-    return commitId
+  /**
+   * 把 origin 指到自己的 fork。没有 git 仓库时先初始化。
+   * @returns {Promise<boolean>}
+   */
+  async ensureForkRemote () {
+    const inside = await this.execSync(`git -C ${PLUGIN_DIR} rev-parse --is-inside-work-tree`)
+    if (inside.error || !String(inside.stdout).includes('true')) {
+      const init = await this.execSync(`git -C ${PLUGIN_DIR} init -b ${BRANCH}`)
+      if (init.error) {
+        await this.reply('初始化 git 仓库失败，无法更新')
+        return false
+      }
+    }
+
+    const remotes = await this.execSync(`git -C ${PLUGIN_DIR} remote`)
+    const hasOrigin = !remotes.error && String(remotes.stdout).split(/\s+/).includes('origin')
+    const set = hasOrigin
+      ? await this.execSync(`git -C ${PLUGIN_DIR} remote set-url origin ${REPO}`)
+      : await this.execSync(`git -C ${PLUGIN_DIR} remote add origin ${REPO}`)
+    if (set.error) {
+      await this.reply('设置更新仓库失败')
+      return false
+    }
+    return true
   }
 
   /**

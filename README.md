@@ -38,7 +38,7 @@
 
 采集阶段在预热后通常是几十毫秒。截图时间仍取决于 Puppeteer 机器性能，但 JPEG + 无外网资源会明显缩短。
 
-> 覆盖安装后请重启 Yunzai。不要用原仓库的 `#猫猫状态更新`，那会把加速补丁覆盖掉。
+> 覆盖安装后请重启 Yunzai。`#猫猫状态更新` 会从 [jy-encore/neko-status-plugin](https://github.com/jy-encore/neko-status-plugin) 拉取，不会再回到原仓库。解压安装没有 `.git` 时，这条命令会先初始化仓库再对齐 `main`。
 
 新增配置（锅巴可改）：`headimg_cache_ttl`、`screenshot_type`、`screenshot_quality`、`custom_timeout`。
 
@@ -53,14 +53,14 @@ pnpm install --filter=neko-status-plugin
 原版安装方式：
 
 ```
-git clone https://github.com/erzaozi/neko-status-plugin.git ./plugins/neko-status-plugin
+git clone https://github.com/jy-encore/neko-status-plugin.git ./plugins/neko-status-plugin
 ```
 
 > [!NOTE]
 > 如果你的网络环境较差，无法连接到 Github，可以使用 [GitHub Proxy](https://mirror.ghproxy.com/) 提供的文件代理加速下载服务
 >
 > ```
-> git clone https://mirror.ghproxy.com/https://github.com/erzaozi/neko-status-plugin.git ./plugins/neko-status-plugin
+> git clone https://mirror.ghproxy.com/https://github.com/jy-encore/neko-status-plugin.git ./plugins/neko-status-plugin
 > ```
 
 ## 插件配置

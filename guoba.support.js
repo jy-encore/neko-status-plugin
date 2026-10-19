@@ -10,7 +10,7 @@ export function supportGuoba() {
       title: '猫猫状态插件',
       author: ['@erzaozi', '@CikeyQi'],
       authorLink: ['https://github.com/erzaozi', 'https://github.com/CikeyQi'],
-      link: 'https://github.com/erzaozi/neko-status-plugin',
+      link: 'https://github.com/jy-encore/neko-status-plugin',
       isV3: true,
       isV2: false,
       showInMenu: true,
