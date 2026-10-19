@@ -1,3 +1,7 @@
 use_template: 'default'
 headimg_url: 'https://t.mwm.moe/pc/'
+headimg_cache_ttl: 300
+screenshot_type: 'jpeg'
+screenshot_quality: 90
+custom_timeout: 1500
 custom: []

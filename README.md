@@ -13,9 +13,44 @@
 > [!TIP]
 > 在看到 [Koishi](https://koishi.js.org/) 和 [Nonebot](https://nonebot.dev/) 类似风格的插件后，身为猫猫控我与 [CikeyQi](https://github.com/CikeyQi) 立马喜欢上了如此精美的设计，于是决定将这个插件移植到 Yunzai 上，并重新修改创作了模板加上了自定义头图，人家有的咱们也可以有喵~
 
+## 性能优化（0.0.5 fast）
+
+原版 `#状态` 慢，主要卡在四件事：`systeminformation` 的 CPU / 网速各空等约 1 秒、每次下载随机头图、`si.graphics()` 探测 GPU、以及 PNG 整页截图。
+
+本加速版在不改面板样式的前提下做了这些事：
+
+| 瓶颈 | 原版 | 加速版 |
+| --- | --- | --- |
+| CPU / 网速 | 每次采样等待 ~1000ms | 后台每秒采样，请求直接读缓存 |
+| 内存 / 磁盘 / 系统 | `systeminformation` 全量探测 | `/proc`、`os`、`fs.statfs` 即时读取 |
+| GPU | 每次 `si.graphics()`，核显常被超时或虚拟显卡挡住 | Win32_VideoController / lspci / sysfs，过滤远程和虚拟显卡，成功缓存 10 分钟 |
+| 头图 | 每次下载 `t.mwm.moe` 再转 base64 | stale-while-revalidate，失败走本地兜底 |
+| 头像 | 截图时再走 QQ 头像 CDN | 预先转 data URI，截图 0 外网 |
+| 截图 | PNG | JPEG quality 90（可改回 png） |
+| 自定义命令 | 超时 5s | 默认 1.5s，空列表直接跳过 |
+| 配置 | 每次读 YAML | mtime 缓存 |
+
+机器人日志会出现：
+
+```
+[Neko状态] 采集 XXms / 截图 XXms / 合计 XXms
+```
+
+采集阶段在预热后通常是几十毫秒。截图时间仍取决于 Puppeteer 机器性能，但 JPEG + 无外网资源会明显缩短。
+
+> 覆盖安装后请重启 Yunzai。不要用原仓库的 `#猫猫状态更新`，那会把加速补丁覆盖掉。
+
+新增配置（锅巴可改）：`headimg_cache_ttl`、`screenshot_type`、`screenshot_quality`、`custom_timeout`。
+
 ## 安装插件
 
-#### 1. 克隆仓库
+把本加速版解压到 `plugins/neko-status-plugin`（覆盖原目录），然后：
+
+```
+pnpm install --filter=neko-status-plugin
+```
+
+原版安装方式：
 
 ```
 git clone https://github.com/erzaozi/neko-status-plugin.git ./plugins/neko-status-plugin
@@ -27,12 +62,6 @@ git clone https://github.com/erzaozi/neko-status-plugin.git ./plugins/neko-statu
 > ```
 > git clone https://mirror.ghproxy.com/https://github.com/erzaozi/neko-status-plugin.git ./plugins/neko-status-plugin
 > ```
-
-#### 2. 安装依赖
-
-```
-pnpm install --filter=neko-status-plugin
-```
 
 ## 插件配置
 
@@ -131,6 +160,7 @@ pnpm install --filter=neko-status-plugin
 
 1. 显示`The Emperor's New XXX` 是什么意思？
    - 获取不到你的设备信息
+   - GPU 若一直是 New GPU：确认不是只插了远程桌面。插件会忽略 Microsoft Remote Display Adapter、Virtual Display Adapter、Hyper-V / RDP / VMware / Virtio 等虚拟显卡，只显示 Intel / NVIDIA / AMD 物理卡。核显（UHD / Iris / Arc）现在会走 Windows CIM 或 Linux lspci，不再只等 nvidia-smi。
 
 ## 支持与贡献 😽
 
@@ -145,4 +175,4 @@ pnpm install --filter=neko-status-plugin
 
 ## 许可证
 
-本项目使用 [GNU AGPLv3](https://choosealicense.com/licenses/agpl-3.0/) 作为开源许可证。
+本项目使用 [GNU AGPLv3](https://choosealicense.com/licenses/agpl-3.0/) 作为开源许可证。加速版保留原作者版权，仅在采集 / 截图路径上做性能修改。

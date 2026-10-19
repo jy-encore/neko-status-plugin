@@ -14,13 +14,9 @@ export function supportGuoba() {
       isV3: true,
       isV2: false,
       showInMenu: true,
-      description: '基于 Yunzai 的机器人状态查看插件',
-      // 显示图标，此为个性化配置
-      // 图标可在 https://icon-sets.iconify.design 这里进行搜索
+      description: '基于 Yunzai 的机器人状态查看插件（加速版）',
       icon: 'noto-v1:cat',
-      // 图标颜色，例：#FF0000 或 rgb(255, 0, 0)
       iconColor: '#d19f56',
-      // 如果想要显示成图片，也可以填写图标路径（绝对路径）
       iconPath: path.join(pluginRoot, 'resources/readme/girl.png'),
     },
     configInfo: {
@@ -41,6 +37,48 @@ export function supportGuoba() {
           component: "Input",
           componentProps: {
             placeholder: '图片地址，请自行测试是否有效',
+          },
+        },
+        {
+          field: "headimg_cache_ttl",
+          label: "头图缓存秒数",
+          bottomHelpMessage: "远程头图缓存时间，0 仍会后台刷新，请求不再等待下载",
+          component: "InputNumber",
+          componentProps: {
+            min: 0,
+            max: 86400,
+          },
+        },
+        {
+          field: "screenshot_type",
+          label: "截图格式",
+          bottomHelpMessage: "jpeg 编码更快、体积更小；png 更清晰",
+          component: "Select",
+          componentProps: {
+            options: [
+              { label: 'jpeg（推荐）', value: 'jpeg' },
+              { label: 'png', value: 'png' },
+            ],
+          },
+        },
+        {
+          field: "screenshot_quality",
+          label: "JPEG 质量",
+          bottomHelpMessage: "仅 jpeg 生效，80-90 是速度与清晰度的平衡点",
+          component: "InputNumber",
+          componentProps: {
+            min: 50,
+            max: 100,
+          },
+        },
+        {
+          field: "custom_timeout",
+          label: "自定义命令超时(ms)",
+          bottomHelpMessage: "自定义展示命令的最长等待，超时跳过该项",
+          component: "InputNumber",
+          componentProps: {
+            min: 200,
+            max: 10000,
           },
         },
         {

@@ -2,10 +2,18 @@ import fs from 'fs'
 import Config from '../components/Config.js'
 import { pluginRoot } from '../model/path.js'
 import Log from '../utils/logs.js'
+import { startSampler } from './sampler.js'
+import { prefetchStatic } from './staticCache.js'
 
 class Init {
   constructor() {
     this.initConfig()
+    try {
+      startSampler()
+      prefetchStatic()
+    } catch (err) {
+      Log.e('预热采样器失败', err)
+    }
   }
 
   initConfig() {
@@ -21,6 +29,7 @@ class Init {
     }
     const config_default_yaml = Config.getDefConfig()
     const config_yaml = Config.getConfig()
+    if (!config_default_yaml || !config_yaml) return false
     for (const key in config_default_yaml) {
       if (!(key in config_yaml)) {
         config_yaml[key] = config_default_yaml[key]

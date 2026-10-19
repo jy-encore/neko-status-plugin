@@ -7,18 +7,13 @@ import Config from '../components/Config.js'
 export class neko_status extends plugin {
   constructor() {
     super({
-      /** 功能名称 */
       name: 'Neko状态',
-      /** 功能描述 */
       dsc: '获取Neko状态',
       event: 'message',
-      /** 优先级，数字越小等级越高 */
       priority: -1009,
       rule: [
         {
-          /** 命令正则匹配 */
           reg: '^[/#]?(状态|status)$',
-          /** 执行方法 */
           fnc: 'status'
         }
       ]
@@ -26,17 +21,30 @@ export class neko_status extends plugin {
   }
 
   async status(e) {
-    const config = await Config.getConfig();
-
+    const t0 = Date.now()
+    const config = Config.getConfig() || {}
     const data = await getData.getData(e)
+    const t1 = Date.now()
 
-    const base64 = await puppeteer.screenshot('neko-status-plugin', {
+    const imgType = config.screenshot_type || 'jpeg'
+    const screenshotOpts = {
       saveId: 'status',
-      imgType: 'png',
-      tplFile: `${pluginResources}/template/${config.use_template}/template.html`,
+      imgType,
+      tplFile: `${pluginResources}/template/${config.use_template || 'default'}/template.html`,
       pluginResources,
-      data: data
-    })
+      data,
+      pageGotoParams: {
+        waitUntil: 'load',
+        timeout: 15000
+      }
+    }
+    if (imgType !== 'png') {
+      screenshotOpts.quality = Number(config.screenshot_quality || 90)
+    }
+
+    const base64 = await puppeteer.screenshot('neko-status-plugin', screenshotOpts)
+    const t2 = Date.now()
+    logger.mark(`[Neko状态] 采集 ${t1 - t0}ms / 截图 ${t2 - t1}ms / 合计 ${t2 - t0}ms`)
     await e.reply(base64)
     return true
   }

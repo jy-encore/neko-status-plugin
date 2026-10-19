@@ -1,49 +1,28 @@
-import systemInformation from 'systeminformation';
-import os from 'os';
+import { getSampledCpu } from '../model/sampler.js'
+import { getCpuModelFast } from '../model/staticCache.js'
 
 /**
- * 获取CPU负载和频率
- * @return {Promise<Object>} 包含CPU负载和频率的对象
+ * 获取CPU负载和频率（后台采样，请求时 0 等待）
+ * @return {Promise<Object>}
  */
 export async function getCpuLoadAndSpeed() {
   try {
-    const info = await systemInformation.get({
-      currentLoad: 'currentLoad',
-      cpu: 'speed'
-    });
-
-    return {
-      text: `${info.currentLoad.currentLoad.toFixed(2)}% (${info.cpu.speed}GHz)`,
-      progress: info.currentLoad.currentLoad / 100
-    };
+    return getSampledCpu()
   } catch (error) {
-    logger.error('获取CPU信息时出错:', error);
-    return {
-      text: "0% (0GHz)",
-      progress: 0
-    };
+    logger.error('获取CPU信息时出错:', error)
+    return { text: '0% (0GHz)', progress: 0 }
   }
 }
 
 /**
  * 获取CPU型号
- * @return {Promise<Object>} 包含CPU型号的对象
+ * @return {Promise<Object>}
  */
 export async function getCpuModel() {
   try {
-    const cpus = os.cpus();
-    if (cpus.length === 0) {
-      throw new Error('未找到CPU');
-    }
-    return {
-      key: 'CPU',
-      value: cpus[0].model.length > 36 ? cpus[0].model.slice(0, 36) + '...' : cpus[0].model
-    };
+    return getCpuModelFast()
   } catch (error) {
-    logger.error('获取CPU信息时出错:', error);
-    return {
-      key: 'CPU',
-      value: "The Emperor's New CPU"
-    };
+    logger.error('获取CPU信息时出错:', error)
+    return { key: 'CPU', value: "The Emperor's New CPU" }
   }
 }

@@ -1,7 +1,7 @@
 {
   "name": "neko-status-plugin",
-  "version": "0.0.3",
-  "description": "基于Yunzai-Bot的状态展示插件，可自定义头图",
+  "version": "0.0.5",
+  "description": "基于Yunzai-Bot的状态展示插件，可自定义头图（加速版）",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -19,5 +19,5 @@
     "status"
   ],
   "author": "@ErZaozi",
-  "license": "ISC"
+  "license": "AGPL-3.0"
 }
